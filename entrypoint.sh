@@ -11,10 +11,16 @@ fi
 
 if [ "$KEY_PATH" -a "$CERTIFICATE_PATH" ]; then
 	if [ "$MAILNAME" ]; then
-	  echo "MAIN_TLS_ENABLE = yes" >>  /etc/exim4/exim4.conf.localmacros
+	  echo "MAIN_TLS_ENABLE = yes" >>  /etc/exim4/exim4.conf.localmacros
 	else
-	  echo "MAIN_TLS_ENABLE = yes" >>  /etc/exim4/exim4.conf.localmacros
+	  echo "MAIN_TLS_ENABLE = yes" >>  /etc/exim4/exim4.conf.localmacros
 	fi
+	
+	# ⭐ WICHTIGE ÄNDERUNG: Deaktiviert die obligatorische Client-Zertifikatsverifizierung (mTLS),
+	# um den "Certificate is bad"-Fehler von Clients wie Dapr zu beheben.
+    echo "tls_verify_clients = " >> /etc/exim4/exim4.conf.localmacros
+    echo "tls_crl_file = " >> /etc/exim4/exim4.conf.localmacros
+    
 	cp $KEY_PATH /etc/exim4/exim.key
 	cp $CERTIFICATE_PATH /etc/exim4/exim.crt
 	chgrp Debian-exim /etc/exim4/exim.key
@@ -26,11 +32,12 @@ fi
 opts=(
 	dc_local_interfaces "[${BIND_IP:-0.0.0.0}]:${PORT:-25} ; [${BIND_IP6:-::0}]:${PORT:-25}"
 	dc_other_hostnames "${OTHER_HOSTNAMES}"
+	# Beachtet, dass die interne IP (eth0) zusammen mit RELAY_NETWORKS hinzugefügt wird
 	dc_relay_nets "$(ip addr show dev eth0 | awk '$1 == "inet" { print $2 }' | xargs | sed 's/ /:/g')${RELAY_NETWORKS}"
 )
 
 if [ "$DISABLE_IPV6" ]; then
-        echo 'disable_ipv6=true' >> /etc/exim4/exim4.conf.localmacros
+        echo 'disable_ipv6=true' >> /etc/exim4/exim4.conf.localmacros
 fi
 
 if [ "$GMAIL_USER" -a "$GMAIL_PASSWORD" ]; then
