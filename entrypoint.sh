@@ -54,7 +54,12 @@ fi
 opts=(
     dc_local_interfaces "[${BIND_IP:-0.0.0.0}]:${PORT:-25} ; [${BIND_IP6:-::0}]:${PORT:-25}"
     dc_other_hostnames "${OTHER_HOSTNAMES}"
-    dc_relay_nets "$(ip addr show dev eth0 | awk '$1 == "inet" { print $2 }' | xargs | sed 's/ /:/g')${RELAY_NETWORKS}"
+    POD_IP_CIDR=$(ip -o -f inet addr show dev eth0 | awk '{print $4}' | head -n1)
+    RELAY_NETS_COMBINED="$POD_IP_CIDR"
+    [ -n "$RELAY_NETWORKS" ] && RELAY_NETS_COMBINED="$RELAY_NETS_COMBINED:$RELAY_NETWORKS"
+
+    dc_relay_nets "$RELAY_NETS_COMBINED"
+
 )
 
 
