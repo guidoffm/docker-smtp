@@ -51,15 +51,20 @@ fi
 ### ---------------------------------------------------------
 ### 4. Base exim4 configuration via update-exim4.conf
 ### ---------------------------------------------------------
+# Determine pod IP CIDR
+POD_IP_CIDR=$(ip -o -f inet addr show dev eth0 | awk '{print $4}' | head -n1)
+
+# Build relay nets
+RELAY_NETS_COMBINED="$POD_IP_CIDR"
+if [ -n "$RELAY_NETWORKS" ]; then
+    RELAY_NETS_COMBINED="$RELAY_NETS_COMBINED:$RELAY_NETWORKS"
+fi
+
+# Now the array can be defined cleanly
 opts=(
     dc_local_interfaces "[${BIND_IP:-0.0.0.0}]:${PORT:-25} ; [${BIND_IP6:-::0}]:${PORT:-25}"
     dc_other_hostnames "${OTHER_HOSTNAMES}"
-    POD_IP_CIDR=$(ip -o -f inet addr show dev eth0 | awk '{print $4}' | head -n1)
-    RELAY_NETS_COMBINED="$POD_IP_CIDR"
-    [ -n "$RELAY_NETWORKS" ] && RELAY_NETS_COMBINED="$RELAY_NETS_COMBINED:$RELAY_NETWORKS"
-
     dc_relay_nets "$RELAY_NETS_COMBINED"
-
 )
 
 
